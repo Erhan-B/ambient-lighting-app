@@ -22,4 +22,8 @@ public record ScreenConfig(
 	public int getScreenHeight() {
 		return screenHeight;
 	}
+	
+	public sampleType getSampleType() {
+		return type;
+	}
 }

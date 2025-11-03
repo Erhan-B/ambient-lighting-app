@@ -17,7 +17,7 @@ public class GUI extends Application{
 	public void start(Stage stage) throws Exception {
 		GridPane root = new GridPane();
 		
-		GuiComp gui = new GuiComp(root, 33, 16);
+		GuiComp gui = new GuiComp(stage, root, 33, 16);
 		Scene scene = new Scene(root, 500, 500);
 		gui.updateLed(0, 0, 255, 255, 255);
 		gui.updateLed(0, 1, 200, 0, 150);

@@ -21,8 +21,6 @@ public class CaptureScreen {
 	private Robot r;
 	private GraphicsDevice gd;
 	private ScreenConfig screen;
-//	private int screenWidth;
-//	private int screenHeight;
 	
 	//The strip around the edge of the screen to be captured (pixels)
 	private int capStrip = 20;
@@ -41,9 +39,6 @@ public class CaptureScreen {
 			gd = screens[0];
 			Rectangle bounds = gd.getDefaultConfiguration().getBounds();
 			screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5, sampleType.EDGE_ONLY);
-//			screenWidth = bounds.width;
-//			screenHeight = bounds.height;
-//			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screenWidth, screenHeight);
 			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
 			r = new Robot(gd);
 			
@@ -99,10 +94,24 @@ public class CaptureScreen {
 //		System.out.println("Red: " + red + ", Green " + green + ", Blue: " + blue);
 	}
 	
-	private void sparseSampling() {
+	//Samples the areas around the edge of the screen
+	//Splits the edges of the screen into subsample zones
+	//Scatters the sample points to create a dispersed sample of each subsample zone
+	private void edgeSample() {
 		
 	}
 	
+	private void edgeCenterSample() {
+		
+	}
+	
+	private void gridSample() {
+		
+	}
+	
+	private void customSample() {
+		
+	}
 	//For debug
 	//Saves image to /img
 	@SuppressWarnings("unused")

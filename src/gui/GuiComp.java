@@ -2,17 +2,23 @@ package gui;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.control.Alert;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Hyperlink;
+import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Popup;
+import javafx.stage.PopupWindow;
+import javafx.stage.Stage;
 
 
 public class GuiComp {
+	private Stage stage;
 	private GridPane root;
 	private GridPane leds;
 	private MenuBar menuBar;
@@ -33,7 +39,8 @@ public class GuiComp {
 	 * @param ledWidth The number of horizontal leds on each side
 	 * @param ledHeight The number of vertical leds on each side
 	 */
-	public GuiComp(GridPane root, int numLedW, int numLedH) {
+	public GuiComp(Stage stage, GridPane root, int numLedW, int numLedH) {
+		this.stage = stage;
 		this.root = root;
 		this.numLedW = numLedW;
 		this.numLedH = numLedH;
@@ -42,9 +49,17 @@ public class GuiComp {
 		
 		leds = new GridPane();
 		menuBar = new MenuBar();
-
+		initProgram();
 		setLayout();
 		setMenu();
+	}
+	
+	private void initProgram() {
+		Label label = new Label("Init program");
+		Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+		alert.setTitle("Initialization");
+		alert.setHeaderText(null);
+		alert.showAndWait();
 	}
 	
 	/**
