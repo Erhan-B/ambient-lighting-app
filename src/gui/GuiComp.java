@@ -113,6 +113,7 @@ public class GuiComp {
 		docsLink.setOnAction(event -> {
 			new Thread(()-> {
 				try {
+					//TODO replace with appropriate help page
 					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://www.oracle.com"));
 				} catch (Exception ex) {
 					ex.printStackTrace();

@@ -22,9 +22,6 @@ public class CaptureScreen {
 	private GraphicsDevice gd;
 	private ScreenConfig screen;
 	
-	//The strip around the edge of the screen to be captured (pixels)
-	private int capStrip = 20;
-	
 	
 	public CaptureScreen() {
 		try {
@@ -39,7 +36,7 @@ public class CaptureScreen {
 			gd = screens[0];
 			Rectangle bounds = gd.getDefaultConfiguration().getBounds();
 			screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5, sampleType.EDGE_ONLY);
-			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
+			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
 			r = new Robot(gd);
 			
 		} catch (AWTException awtex) {
@@ -55,28 +52,7 @@ public class CaptureScreen {
 	}
 	
 	public void readScreen() {
-		//Section for reading entire edge of screen
-		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
-		
-		BufferedImage topStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y, bounds.width, capStrip));
-		BufferedImage bottomStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y + bounds.height - capStrip, bounds.width, capStrip));
-		BufferedImage leftStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y + capStrip, capStrip, bounds.height - 2*capStrip));
-		BufferedImage rightStrip = r.createScreenCapture(new Rectangle(bounds.x + bounds.width - capStrip, bounds.y + capStrip, capStrip, bounds.height - 2*capStrip));
-		
-		BufferedImage image = new BufferedImage(screen.getScreenWidth(), screen.getScreenHeight(),BufferedImage.TYPE_INT_RGB);
-		
-		Graphics2D g2d = image.createGraphics();
-		g2d.setColor(Color.BLACK);
-		
-		g2d.fillRect(0, 0, screen.getScreenWidth(), screen.getScreenHeight());
-		
-		g2d.drawImage(topStrip, 0, 0, null);
-		g2d.drawImage(bottomStrip, 0, screen.getScreenHeight()-capStrip, null);
-		g2d.drawImage(leftStrip, 0, capStrip, null);
-		g2d.drawImage(rightStrip, screen.getScreenWidth()-capStrip,capStrip, null);
-		
-		g2d.dispose();
-		writeImage(image);
+		edgeSample();
 		
 		//Section for reading pixel at center of screen
 //		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
@@ -98,9 +74,19 @@ public class CaptureScreen {
 	//Splits the edges of the screen into subsample zones
 	//Scatters the sample points to create a dispersed sample of each subsample zone
 	private void edgeSample() {
+		int gapSizeTop = (screen.screenWidth() - (screen.sampleSize() * screen.ledsTop())) / (screen.ledsTop() + 1);
+		int gapSizeBottom = (screen.screenWidth() - (screen.sampleSize() * screen.ledsBottom())) / (screen.ledsBottom() + 1);
+		int gapSizeLeft = (screen.screenHeight() - (screen.sampleSize() * screen.ledsLeft())) / (screen.ledsLeft() + 1);
+		int gapSizeRight = (screen.screenHeight() - (screen.sampleSize() * screen.ledsRight())) / (screen.ledsRight() + 1);
 		
+		//Debug
+		System.out.println(gapSizeTop);
+		System.out.println(gapSizeBottom);
+		System.out.println(gapSizeLeft);
+		System.out.println(gapSizeRight);
 	}
 	
+	//Same sampling as edgeSample but factors in pixels in the center of the screen
 	private void edgeCenterSample() {
 		
 	}
@@ -112,8 +98,36 @@ public class CaptureScreen {
 	private void customSample() {
 		
 	}
-	//For debug
-	//Saves image to /img
+	
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEBUG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+	//Saves image of edge of screen
+	@SuppressWarnings("unused")
+	private void drawEdge(int capStrip) {
+		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+		
+		BufferedImage topStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y, bounds.width, capStrip));
+		BufferedImage bottomStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y + bounds.height - capStrip, bounds.width, capStrip));
+		BufferedImage leftStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y + capStrip, capStrip, bounds.height - 2*capStrip));
+		BufferedImage rightStrip = r.createScreenCapture(new Rectangle(bounds.x + bounds.width - capStrip, bounds.y + capStrip, capStrip, bounds.height - 2*capStrip));
+		
+		BufferedImage image = new BufferedImage(screen.screenWidth(), screen.screenHeight(),BufferedImage.TYPE_INT_RGB);
+		
+		Graphics2D g2d = image.createGraphics();
+		g2d.setColor(Color.BLACK);
+		
+		g2d.fillRect(0, 0, screen.screenWidth(), screen.screenHeight());
+		
+		g2d.drawImage(topStrip, 0, 0, null);
+		g2d.drawImage(bottomStrip, 0, screen.screenHeight()-capStrip, null);
+		g2d.drawImage(leftStrip, 0, capStrip, null);
+		g2d.drawImage(rightStrip, screen.screenWidth()-capStrip,capStrip, null);
+		
+		g2d.dispose();
+		writeImage(image);
+	}
+
+	//Writes image to file
 	@SuppressWarnings("unused")
 	private void writeImage(BufferedImage image) {
 		File outputFile = new File("images/" + System.currentTimeMillis() + ".png");

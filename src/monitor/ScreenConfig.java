@@ -14,16 +14,4 @@ public record ScreenConfig(
 		int sampleSize,
 		sampleType type
 		) {
-	
-	public int getScreenWidth() {
-		return screenWidth;
-	}
-	
-	public int getScreenHeight() {
-		return screenHeight;
-	}
-	
-	public sampleType getSampleType() {
-		return type;
-	}
 }
