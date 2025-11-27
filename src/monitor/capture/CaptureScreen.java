@@ -5,10 +5,14 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.Point;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -21,6 +25,7 @@ public class CaptureScreen {
 	private Robot r;
 	private GraphicsDevice gd;
 	private ScreenConfig screen;
+	private List<Point> scanList;
 	
 	
 	public CaptureScreen() {
@@ -38,6 +43,7 @@ public class CaptureScreen {
 			screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5, sampleType.EDGE_ONLY);
 			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
 			r = new Robot(gd);
+			scanList = new ArrayList<>();
 			
 		} catch (AWTException awtex) {
 			System.err.println("Low level input control not allowed");
@@ -52,7 +58,7 @@ public class CaptureScreen {
 	}
 	
 	public void readScreen() {
-		edgeSample();
+		edgeSample(40, 40, 5, 15);
 		
 		//Section for reading pixel at center of screen
 //		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
@@ -73,17 +79,63 @@ public class CaptureScreen {
 	//Samples the areas around the edge of the screen
 	//Splits the edges of the screen into subsample zones
 	//Scatters the sample points to create a dispersed sample of each subsample zone
-	private void edgeSample() {
-		int gapSizeTop = (screen.screenWidth() - (screen.sampleSize() * screen.ledsTop())) / (screen.ledsTop() + 1);
-		int gapSizeBottom = (screen.screenWidth() - (screen.sampleSize() * screen.ledsBottom())) / (screen.ledsBottom() + 1);
-		int gapSizeLeft = (screen.screenHeight() - (screen.sampleSize() * screen.ledsLeft())) / (screen.ledsLeft() + 1);
-		int gapSizeRight = (screen.screenHeight() - (screen.sampleSize() * screen.ledsRight())) / (screen.ledsRight() + 1);
+	/**
+	 * Samples pixels in a range around the edge of the screen
+	 * @param x The x coordinate of the central pixel of the sample
+	 * @param y The y coordinate of the central pixel of the sample
+	 * @param sparcity The gap between subsequent pixels in the sample
+	 * @param sampleSize The length of one side of the square to be sampled
+	 */
+	private void edgeSample(int x, int y, int sparcity, int sampleSize) {
+//		int gapSizeTop = (screen.screenWidth() - (screen.sampleSize() * screen.ledsTop())) / (screen.ledsTop() + 1);
+//		int gapSizeBottom = (screen.screenWidth() - (screen.sampleSize() * screen.ledsBottom())) / (screen.ledsBottom() + 1);
+//		int gapSizeLeft = (screen.screenHeight() - (screen.sampleSize() * screen.ledsLeft())) / (screen.ledsLeft() + 1);
+//		int gapSizeRight = (screen.screenHeight() - (screen.sampleSize() * screen.ledsRight())) / (screen.ledsRight() + 1);
+//		
+//		//Debug
+//		System.out.println(gapSizeTop);
+//		System.out.println(gapSizeBottom);
+//		System.out.println(gapSizeLeft);
+//		System.out.println(gapSizeRight);
 		
-		//Debug
-		System.out.println(gapSizeTop);
-		System.out.println(gapSizeBottom);
-		System.out.println(gapSizeLeft);
-		System.out.println(gapSizeRight);
+		if(sparcity >= sampleSize) {
+			System.err.println("Sparcity greater than sample size");
+			return;
+		}
+		if(sampleSize <= 0) {
+			System.err.println("Sample size cannot be <= 0");
+			return;
+		}
+		if(!isInRange(x, y)) {
+			System.err.println("Cannot sample pixel outside of monitor range");
+			return;
+		}
+		
+		int fx = x + (int)(sampleSize /2);
+		int ix = x - (int)(sampleSize /2);
+		int fy = y + (int)(sampleSize /2);
+		int iy = y - (int)(sampleSize /2);
+		
+//		System.out.printf("fx:%d\nix:%d\nfy:%d\niy:%d\n", fx,ix,fy,iy);
+		
+		int scanned = 0;
+		
+		for(int i = ix; i < fx +1; i+= sparcity) {
+			for(int j = iy; j < fy +1; j += sparcity) {
+				
+//				System.out.println(i + "," + j);
+				
+				if(isInRange(i, j)) {
+					scanList.add(new Point(i, j));
+					System.out.printf("Added entry to scanmap: (%d,%d)\n",i,j);
+					scanned++;
+				}
+				else {
+					System.out.printf("(%d,%d) is out of range\n",i,j);
+				}
+			}
+		}
+		System.out.printf("Scanned %d pixels\n", scanned);
 	}
 	
 	//Same sampling as edgeSample but factors in pixels in the center of the screen
@@ -97,6 +149,10 @@ public class CaptureScreen {
 	
 	private void customSample() {
 		
+	}
+	
+	private boolean isInRange(int x, int y) {
+		return (x >=0 && y >=0 && x <=screen.screenWidth() && y <= screen.screenHeight());
 	}
 	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEBUG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
