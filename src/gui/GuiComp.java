@@ -10,6 +10,7 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -21,7 +22,9 @@ public class GuiComp {
 	private boolean isRunning;
 	
 	private Stage stage;
-	private GridPane root;
+	private StackPane root;
+	private GridPane mainView;
+	private GridPane editView;
 	private GridPane leds;
 	private MenuBar menuBar;
 	
@@ -37,15 +40,18 @@ public class GuiComp {
  	
 	/**
 	 * Parameterized constructor
-	 * @param root Gridpane root instance
+	 * @param mainView Gridpane mainView instance
 	 * @param ledWidth The number of horizontal leds on each side
 	 * @param ledHeight The number of vertical leds on each side
 	 */
-	public GuiComp(Stage stage, GridPane root, int numLedW, int numLedH) {
+	public GuiComp(Stage stage, int numLedW, int numLedH) {
 		screen = new CaptureScreen();
 		
 		this.stage = stage;
-		this.root = root;
+		mainView = new GridPane();
+		editView = new GridPane();
+		root = new StackPane();
+		
 		this.numLedW = numLedW;
 		this.numLedH = numLedH;
 		
@@ -53,9 +59,12 @@ public class GuiComp {
 		
 		leds = new GridPane();
 		menuBar = new MenuBar();
+		
 		initProgram();
 		setLayout();
 		setMenu();
+		root.getChildren().addAll(mainView,editView);
+		editView.setVisible(false);
 	}
 	
 	private void initProgram() {
@@ -71,12 +80,14 @@ public class GuiComp {
 	 * Set layout properties
 	 */
 	private void setLayout() {
+//~~~~~~~~~~~~~~Main view~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		ledPixelsW = 20;
 		ledPixelsH = 20;
-		leds.hgapProperty().bind(root.widthProperty().multiply(0.005));
-		leds.vgapProperty().bind(root.heightProperty().multiply(0.005));
+		leds.hgapProperty().bind(mainView.widthProperty().multiply(0.005));
+		leds.vgapProperty().bind(mainView.heightProperty().multiply(0.005));
 		leds.setStyle("-fx-border-color: black; -fx-border-width: 2px; -fx-padding: 10px; -fx-background-color: #7ea5aa");
-		root.setStyle("-fx-background-color: #1e1e1e;");
+		mainView.setStyle("-fx-background-color: #1e1e1e;");
+		
 		for(int i = 0; i < 33; i++) {
 			Rectangle topLed = new Rectangle(ledPixelsW, ledPixelsH);
 			Rectangle bottomLed = new Rectangle(ledPixelsW, ledPixelsH);
@@ -97,13 +108,18 @@ public class GuiComp {
 			leds.add(rightLed, numLedW -1, i);
 		}
 
-		root.add(leds, 2, 1);
+		mainView.add(leds, 0, 1);
+		
+//~~~~~~~~~~~~~~Edit view~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		
+		
 	}
 	
 	private void setMenu() {
 		final Menu menu1 = new Menu("File");
 		final Menu menu2 = new Menu("Options");
-		final Menu menu3 = new Menu("Help");
+		final Menu menu3 = new Menu("Edit");
+		final Menu menu4 = new Menu("Help");
 		
 		//'File' menu items
 		MenuItem menu1item1 = new MenuItem("Save");
@@ -113,8 +129,11 @@ public class GuiComp {
 		//'Options' menu items
 		MenuItem menu2item1 = new MenuItem("Restart connection");
 		
+		//'Edit' menu items
+		MenuItem menu3item1 = new MenuItem("Edit led layout");
+		
 		//'Help' menu item
-		CustomMenuItem menu3item1 = new CustomMenuItem(docsLink);
+		CustomMenuItem menu4item1 = new CustomMenuItem(docsLink);
 		
 		docsLink.setOnAction(event -> {
 			new Thread(()-> {
@@ -127,29 +146,39 @@ public class GuiComp {
 			}).start();
 		});
 		
-		menu3item1.setOnAction(new EventHandler<ActionEvent>() {
-			@Override public void handle(ActionEvent e) {
-				
-			}
-		});
-		
 		menu1item1.setOnAction(new EventHandler<ActionEvent>() {
 			@Override public void handle(ActionEvent e) {
 				System.out.println("Opening database connection...");
 			}
 		});
 		
+		menu3item1.setOnAction(new EventHandler<ActionEvent>() {
+			@Override public void handle(ActionEvent e) {
+				System.out.println("Editing led layout");
+				mainView.setVisible(false);
+				editView.setVisible(true);
+			}
+		});
+		
+		menu4item1.setOnAction(new EventHandler<ActionEvent>() {
+			@Override public void handle(ActionEvent e) {
+				
+			}
+		});
+		
+		
 		menu1.getItems().addAll(menu1item1,menu1item2,menu1item3);
 		menu2.getItems().addAll(menu2item1);
 		menu3.getItems().addAll(menu3item1);
+		menu4.getItems().addAll(menu4item1);
 		
-		menuBar.getMenus().addAll(menu1,menu2,menu3);
+		menuBar.getMenus().addAll(menu1,menu2,menu3,menu4);
 		
-		root.add(menuBar, 0, 0);
+		mainView.add(menuBar, 0, 0);
 	}
 	
 	public void updateLed(int coordX, int coordY, int color) {
-		if(coordX > numLedW && coordY > numLedH) {
+		if(coordX > numLedW || coordY > numLedH) {
 			System.err.println("Index is out of bounds for the array");
 			return;
 		}
@@ -161,6 +190,10 @@ public class GuiComp {
 		if(updated != null && checkRGB(red,green,blue)) {
 			updated.setFill(Color.rgb(red, green, blue));
 		}
+	}
+	
+	private void editLed() {
+		
 	}
 	
 	public void startCaptureThread() {
@@ -184,5 +217,9 @@ public class GuiComp {
 	
 	private boolean checkRGB(int red, int green, int blue) {
 		return(red <= 255 && red >=0 && green <= 255 && green >=0 && blue <= 255 && blue >= 0);
+	}
+	
+	public StackPane getRoot() {
+		return root;
 	}
 }

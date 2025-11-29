@@ -15,10 +15,9 @@ public class GUI extends Application{
 	
 	@Override
 	public void start(Stage stage) throws Exception {
-		GridPane root = new GridPane();
 		
-		GuiComp gui = new GuiComp(stage, root, 33, 16);
-		Scene scene = new Scene(root, 500, 500);
+		GuiComp gui = new GuiComp(stage, 33, 16);
+		Scene scene = new Scene(gui.getRoot(), 500, 500);
 		gui.startCaptureThread();
 		stage.setMaximized(true);
 		stage.setScene(scene);
