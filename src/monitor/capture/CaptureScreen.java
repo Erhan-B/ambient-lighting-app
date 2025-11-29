@@ -5,17 +5,16 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Point;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import monitor.Pixel;
 import monitor.ScreenConfig;
 import monitor.sampleType;
 
@@ -25,7 +24,7 @@ public class CaptureScreen {
 	private Robot r;
 	private GraphicsDevice gd;
 	private ScreenConfig screen;
-	private List<Point> scanList;
+	private List<Pixel> scanList;
 	
 	
 	public CaptureScreen() {
@@ -45,6 +44,8 @@ public class CaptureScreen {
 			r = new Robot(gd);
 			scanList = new ArrayList<>();
 			
+			edgeSample(40, 40, 5, 15);
+			
 		} catch (AWTException awtex) {
 			System.err.println("Low level input control not allowed");
 			awtex.printStackTrace();
@@ -52,13 +53,14 @@ public class CaptureScreen {
 			System.err.println("Permission not granted");
 			securityex.printStackTrace();
 		}
+		
 		if(r == null) {
 			System.err.println("Robot not initialized successfully");
 		}
 	}
 	
 	public void readScreen() {
-		edgeSample(40, 40, 5, 15);
+		readPixels();
 		
 		//Section for reading pixel at center of screen
 //		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
@@ -106,6 +108,10 @@ public class CaptureScreen {
 			System.err.println("Sample size cannot be <= 0");
 			return;
 		}
+		if(sparcity <= 0) {
+			System.err.println("Sparcity cannot be <=0");
+			return;
+		}
 		if(!isInRange(x, y)) {
 			System.err.println("Cannot sample pixel outside of monitor range");
 			return;
@@ -118,24 +124,68 @@ public class CaptureScreen {
 		
 //		System.out.printf("fx:%d\nix:%d\nfy:%d\niy:%d\n", fx,ix,fy,iy);
 		
-		int scanned = 0;
+		int totalScan = 0;
 		
 		for(int i = ix; i < fx +1; i+= sparcity) {
 			for(int j = iy; j < fy +1; j += sparcity) {
 				
-//				System.out.println(i + "," + j);
-				
 				if(isInRange(i, j)) {
-					scanList.add(new Point(i, j));
-					System.out.printf("Added entry to scanmap: (%d,%d)\n",i,j);
-					scanned++;
+					
+					scanList.add(new Pixel(i, j));
+//					System.out.printf("Added entry to scanmap: (%d,%d)\n",i,j);
+					totalScan++;
 				}
 				else {
-					System.out.printf("(%d,%d) is out of range\n",i,j);
+//					System.out.printf("(%d,%d) is out of range\n",i,j);
 				}
 			}
 		}
-		System.out.printf("Scanned %d pixels\n", scanned);
+//		System.out.printf("Total pixels: %d\n", totalScan);
+		
+	}
+	
+	/**
+	 * 
+	 * @return avgColor the average colour of the scanned zone
+	 */
+	public int readPixels() {
+		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+		BufferedImage image = r.createScreenCapture(bounds);
+		
+//		BufferedImage debugImage = new BufferedImage(screen.screenWidth(), screen.screenHeight(),BufferedImage.TYPE_INT_RGB);
+		long totalR = 0;
+		long totalG = 0;
+		long totalB = 0;
+		
+		for(Pixel p: scanList) {
+			int rgb = image.getRGB(p.x(), p.y());
+			
+			totalR += (rgb >> 16) & 0xFF;
+			totalG += (rgb >> 8) & 0xFF;
+			totalB += rgb & 0xFF;
+			
+			int red = (rgb >> 16) & 0xFF;
+			int green = (rgb >> 8) & 0xFF;
+			int blue = rgb & 0xFF;
+			
+			
+//			System.out.printf("X:%d Y:%d R:%d G:%d B:%d\n\n", p.x(), p.y(), red, green, blue);
+//			debugImage.setRGB(p.x(), p.y(), rgb);
+			
+		}
+		
+		int count = scanList.size();
+		int avgR = (int)(totalR / count);
+		int avgG = (int)(totalG / count);
+		int avgB = (int)(totalB / count);
+		
+//		System.out.printf("avgR:%d avgG:%d avgB:%d\n", avgR, avgG, avgB);
+		
+		int avgColor = (avgR << 16) | (avgG << 8) | avgB;
+		
+//		writeImage(debugImage);
+		
+		return avgColor;
 	}
 	
 	//Same sampling as edgeSample but factors in pixels in the center of the screen

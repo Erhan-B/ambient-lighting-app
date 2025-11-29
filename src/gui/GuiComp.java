@@ -12,12 +12,14 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.stage.Popup;
-import javafx.stage.PopupWindow;
 import javafx.stage.Stage;
+import monitor.capture.CaptureScreen;
 
 
 public class GuiComp {
+	private CaptureScreen screen;
+	private boolean isRunning;
+	
 	private Stage stage;
 	private GridPane root;
 	private GridPane leds;
@@ -40,6 +42,8 @@ public class GuiComp {
 	 * @param ledHeight The number of vertical leds on each side
 	 */
 	public GuiComp(Stage stage, GridPane root, int numLedW, int numLedH) {
+		screen = new CaptureScreen();
+		
 		this.stage = stage;
 		this.root = root;
 		this.numLedW = numLedW;
@@ -60,6 +64,7 @@ public class GuiComp {
 		alert.setTitle("Initialization");
 		alert.setHeaderText(null);
 		alert.showAndWait();
+		
 	}
 	
 	/**
@@ -71,6 +76,7 @@ public class GuiComp {
 		leds.hgapProperty().bind(root.widthProperty().multiply(0.005));
 		leds.vgapProperty().bind(root.heightProperty().multiply(0.005));
 		leds.setStyle("-fx-border-color: black; -fx-border-width: 2px; -fx-padding: 10px; -fx-background-color: #7ea5aa");
+		root.setStyle("-fx-background-color: #1e1e1e;");
 		for(int i = 0; i < 33; i++) {
 			Rectangle topLed = new Rectangle(ledPixelsW, ledPixelsH);
 			Rectangle bottomLed = new Rectangle(ledPixelsW, ledPixelsH);
@@ -142,15 +148,38 @@ public class GuiComp {
 		root.add(menuBar, 0, 0);
 	}
 	
-	public void updateLed(int coordX, int coordY, int red, int green, int blue) {
+	public void updateLed(int coordX, int coordY, int color) {
 		if(coordX > numLedW && coordY > numLedH) {
 			System.err.println("Index is out of bounds for the array");
 			return;
 		}
+		int red = color >> 16 & 0xFF;
+		int green = color >> 8 & 0xFF;
+		int blue = color & 0xFF;
+		
 		Rectangle updated = ledArray[coordX][coordY];
 		if(updated != null && checkRGB(red,green,blue)) {
 			updated.setFill(Color.rgb(red, green, blue));
 		}
+	}
+	
+	public void startCaptureThread() {
+		isRunning = true;
+		
+		Thread t = new Thread(()-> {
+			while(isRunning) {
+				int color = screen.readPixels();
+				
+				javafx.application.Platform.runLater(()-> {
+					updateLed(0,0,color);
+				});
+				
+				try {
+					Thread.sleep(16);
+				}catch(InterruptedException e) {}
+			}
+		});
+		t.start();
 	}
 	
 	private boolean checkRGB(int red, int green, int blue) {

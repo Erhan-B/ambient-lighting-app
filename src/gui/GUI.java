@@ -19,8 +19,7 @@ public class GUI extends Application{
 		
 		GuiComp gui = new GuiComp(stage, root, 33, 16);
 		Scene scene = new Scene(root, 500, 500);
-		gui.updateLed(0, 0, 255, 255, 255);
-		gui.updateLed(0, 1, 200, 0, 150);
+		gui.startCaptureThread();
 		stage.setMaximized(true);
 		stage.setScene(scene);
 		stage.show();
