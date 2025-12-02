@@ -22,26 +22,29 @@ import java.awt.Rectangle;
 
 public class CaptureScreen {
 	private Robot r;
-	private GraphicsDevice gd;
+	private GraphicsDevice selectedScreen;
+	private GraphicsDevice[] screenList;
 	private ScreenConfig screen;
+	private int sampleSize;
+	private int sparcitySize;
 	private List<Pixel> scanList;
 	
 	
 	public CaptureScreen() {
 		try {
 			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-			GraphicsDevice[] screens = ge.getScreenDevices();
+			screenList = ge.getScreenDevices();
 			
-			for(int i = 0; i < screens.length; i++) {
-			System.out.printf("Screen %d: display width: %d, display height: %d%n", i, screens[i].getDisplayMode().getWidth(), screens[i].getDisplayMode().getHeight());
-			}
+//			for(int i = 0; i < screens.length; i++) {
+//			System.out.printf("Screen %d: display width: %d, display height: %d%n", i, screens[i].getDisplayMode().getWidth(), screens[i].getDisplayMode().getHeight());
+//			}
 			
 			//Set as primary
-			gd = screens[0];
-			Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+			selectedScreen = screenList[0];
+			Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
 			screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5, sampleType.EDGE_ONLY);
 			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
-			r = new Robot(gd);
+			r = new Robot(selectedScreen);
 			scanList = new ArrayList<>();
 			
 			edgeSample(40, 40, 5, 15);
@@ -149,7 +152,7 @@ public class CaptureScreen {
 	 * @return avgColor the average colour of the scanned zone
 	 */
 	public int readPixels() {
-		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
 		BufferedImage image = r.createScreenCapture(bounds);
 		
 //		BufferedImage debugImage = new BufferedImage(screen.screenWidth(), screen.screenHeight(),BufferedImage.TYPE_INT_RGB);
@@ -205,12 +208,28 @@ public class CaptureScreen {
 		return (x >=0 && y >=0 && x <=screen.screenWidth() && y <= screen.screenHeight());
 	}
 	
+	public GraphicsDevice[] getScreens() {
+		return screenList;
+	}
+	
+	public void setScreen(GraphicsDevice selectedScreen) {
+		this.selectedScreen = selectedScreen;
+	}
+	
+	public void setSample(int sampleSize) {
+		this.sampleSize = sampleSize;
+	}
+	
+	public void setSparcity(int sparcitySize) {
+		this.sparcitySize = sparcitySize;
+	}
+	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEBUG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 	//Saves image of edge of screen
 	@SuppressWarnings("unused")
 	private void drawEdge(int capStrip) {
-		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
 		
 		BufferedImage topStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y, bounds.width, capStrip));
 		BufferedImage bottomStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y + bounds.height - capStrip, bounds.width, capStrip));
