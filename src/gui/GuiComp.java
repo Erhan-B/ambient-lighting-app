@@ -1,19 +1,25 @@
 package gui;
 
+import java.util.HashMap;
+
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ToolBar;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import monitor.Pixel;
 import monitor.capture.CaptureScreen;
 
 
@@ -21,12 +27,10 @@ public class GuiComp {
 	private CaptureScreen screen;
 	private boolean isRunning;
 	
-	private Stage stage;
 	private StackPane root;
 	private GridPane mainView;
 	private GridPane editView;
 	private GridPane leds;
-	private MenuBar menuBar;
 	
 	private Hyperlink docsLink = new Hyperlink("Documentation");
 	
@@ -37,6 +41,7 @@ public class GuiComp {
 	private int ledPixelsH;
 	
 	private Rectangle[][] ledArray;
+	private HashMap<Integer,Pixel> pixelList;
  	
 	/**
 	 * Parameterized constructor
@@ -44,10 +49,9 @@ public class GuiComp {
 	 * @param ledWidth The number of horizontal leds on each side
 	 * @param ledHeight The number of vertical leds on each side
 	 */
-	public GuiComp(Stage stage, int numLedW, int numLedH) {
+	public GuiComp(int numLedW, int numLedH) {
 		screen = new CaptureScreen();
 		
-		this.stage = stage;
 		mainView = new GridPane();
 		editView = new GridPane();
 		root = new StackPane();
@@ -58,11 +62,11 @@ public class GuiComp {
 		ledArray = new Rectangle[numLedW][numLedH];
 		
 		leds = new GridPane();
-		menuBar = new MenuBar();
+		pixelList = new HashMap<>();
 		
 		initProgram();
 		setLayout();
-		setMenu();
+
 		root.getChildren().addAll(mainView,editView);
 		editView.setVisible(false);
 	}
@@ -107,15 +111,20 @@ public class GuiComp {
 			leds.add(leftLed, 0, i);
 			leds.add(rightLed, numLedW -1, i);
 		}
-
+		
+		mainMenu();
 		mainView.add(leds, 0, 1);
 		
 //~~~~~~~~~~~~~~Edit view~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		editView.setStyle("-fx-background-color: #1e1e1e;");
+		editMenu();
 		
 		
 	}
 	
-	private void setMenu() {
+	private void mainMenu() {
+		MenuBar menuBar = new MenuBar();
+		
 		final Menu menu1 = new Menu("File");
 		final Menu menu2 = new Menu("Options");
 		final Menu menu3 = new Menu("Edit");
@@ -175,6 +184,24 @@ public class GuiComp {
 		menuBar.getMenus().addAll(menu1,menu2,menu3,menu4);
 		
 		mainView.add(menuBar, 0, 0);
+	}
+	
+	private void editMenu() {
+		ToolBar toolbar = new ToolBar();
+		
+		Button doneBtn = new Button("Done");
+		Button addLEDBtn = new Button("Add LED");
+		Button removeBtn = new Button("Remove LED");
+		
+		addLEDBtn.setOnAction(new EventHandler<ActionEvent>() {
+			@Override public void handle(ActionEvent e) {
+				//TODO pixel coordinate logic
+				pixelList.put(pixelList.size()+1, new Pixel(3,3));
+			}
+		});
+		
+		toolbar.getItems().addAll(doneBtn,addLEDBtn,removeBtn);
+		editView.add(toolbar, 0, 0);
 	}
 	
 	public void updateLed(int coordX, int coordY, int color) {
