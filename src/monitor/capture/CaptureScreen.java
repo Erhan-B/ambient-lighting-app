@@ -26,7 +26,7 @@ public class CaptureScreen {
 	private GraphicsDevice[] screenList;
 	private ScreenConfig screen;
 	private int sampleSize;
-	private int sparcitySize;
+	private int sparsitySize;
 	private List<Pixel> scanList;
 	
 	
@@ -88,10 +88,10 @@ public class CaptureScreen {
 	 * Samples pixels in a range around the edge of the screen
 	 * @param x The x coordinate of the central pixel of the sample
 	 * @param y The y coordinate of the central pixel of the sample
-	 * @param sparcity The gap between subsequent pixels in the sample
+	 * @param sparsity The gap between subsequent pixels in the sample
 	 * @param sampleSize The length of one side of the square to be sampled
 	 */
-	private void edgeSample(int x, int y, int sparcity, int sampleSize) {
+	private void edgeSample(int x, int y, int sparsity, int sampleSize) {
 //		int gapSizeTop = (screen.screenWidth() - (screen.sampleSize() * screen.ledsTop())) / (screen.ledsTop() + 1);
 //		int gapSizeBottom = (screen.screenWidth() - (screen.sampleSize() * screen.ledsBottom())) / (screen.ledsBottom() + 1);
 //		int gapSizeLeft = (screen.screenHeight() - (screen.sampleSize() * screen.ledsLeft())) / (screen.ledsLeft() + 1);
@@ -103,18 +103,6 @@ public class CaptureScreen {
 //		System.out.println(gapSizeLeft);
 //		System.out.println(gapSizeRight);
 		
-		if(sparcity >= sampleSize) {
-			System.err.println("Sparcity greater than sample size");
-			return;
-		}
-		if(sampleSize <= 0) {
-			System.err.println("Sample size cannot be <= 0");
-			return;
-		}
-		if(sparcity <= 0) {
-			System.err.println("Sparcity cannot be <=0");
-			return;
-		}
 		if(!isInRange(x, y)) {
 			System.err.println("Cannot sample pixel outside of monitor range");
 			return;
@@ -127,16 +115,16 @@ public class CaptureScreen {
 		
 //		System.out.printf("fx:%d\nix:%d\nfy:%d\niy:%d\n", fx,ix,fy,iy);
 		
-		int totalScan = 0;
+//		int totalScan = 0;
 		
-		for(int i = ix; i < fx +1; i+= sparcity) {
-			for(int j = iy; j < fy +1; j += sparcity) {
+		for(int i = ix; i < fx +1; i+= sparsity) {
+			for(int j = iy; j < fy +1; j += sparsity) {
 				
 				if(isInRange(i, j)) {
 					
 					scanList.add(new Pixel(i, j));
 //					System.out.printf("Added entry to scanmap: (%d,%d)\n",i,j);
-					totalScan++;
+//					totalScan++;
 				}
 				else {
 //					System.out.printf("(%d,%d) is out of range\n",i,j);
@@ -167,9 +155,9 @@ public class CaptureScreen {
 			totalG += (rgb >> 8) & 0xFF;
 			totalB += rgb & 0xFF;
 			
-			int red = (rgb >> 16) & 0xFF;
-			int green = (rgb >> 8) & 0xFF;
-			int blue = rgb & 0xFF;
+//			int red = (rgb >> 16) & 0xFF;
+//			int green = (rgb >> 8) & 0xFF;
+//			int blue = rgb & 0xFF;
 			
 			
 //			System.out.printf("X:%d Y:%d R:%d G:%d B:%d\n\n", p.x(), p.y(), red, green, blue);
@@ -191,19 +179,6 @@ public class CaptureScreen {
 		return avgColor;
 	}
 	
-	//Same sampling as edgeSample but factors in pixels in the center of the screen
-	private void edgeCenterSample() {
-		
-	}
-	
-	private void gridSample() {
-		
-	}
-	
-	private void customSample() {
-		
-	}
-	
 	private boolean isInRange(int x, int y) {
 		return (x >=0 && y >=0 && x <=screen.screenWidth() && y <= screen.screenHeight());
 	}
@@ -216,12 +191,30 @@ public class CaptureScreen {
 		this.selectedScreen = selectedScreen;
 	}
 	
-	public void setSample(int sampleSize) {
+	public boolean setSample(int sampleSize) {
+		if(sampleSize <= 0) {
+			System.err.println("Sample size cannot be <= 0");
+			return false;
+		}
 		this.sampleSize = sampleSize;
+		return true;
 	}
 	
-	public void setSparcity(int sparcitySize) {
-		this.sparcitySize = sparcitySize;
+	public boolean setSparsity(int sparsitySize) {
+		if(sparsitySize <= 0) {
+			System.err.println("Sparsity cannot be <=0");
+			return false;
+		}
+		this.sparsitySize = sparsitySize;
+		return true;
+	}
+	
+	public boolean sampleSparsityCheck() {
+		if(sparsitySize >= sampleSize) {
+			System.err.println("Sparsity greater than sample size");
+			return false;
+		}
+		return true;
 	}
 	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEBUG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -91,14 +91,15 @@ public class NewGui {
 		TextField sampleField = new TextField();
 		Text sampleText = new Text("Sample size ");
 		TextFormatter<Integer> sampleFormatter = new TextFormatter<>(new IntegerStringConverter());
-		TextFormatter<Integer> sparcityFormatter = new TextFormatter<>(new IntegerStringConverter());
+		TextFormatter<Integer> sparsityFormatter = new TextFormatter<>(new IntegerStringConverter());
 		
 		sampleField.setTextFormatter(sampleFormatter);
 		
-		TextField sparcityField = new TextField();
-		Text sparcityText = new Text("Sample sparcity ");
+		TextField sparsityField = new TextField();
+		Text sparsityText = new Text("Sample  ");
 		
-		sparcityField.setTextFormatter(sparcityFormatter);
+		sparsityField.setTextFormatter(sparsityFormatter);
+		sparsityField.setVisible(false);
 		
 		Platform.runLater(() -> {
 			//Monitor selection
@@ -125,20 +126,33 @@ public class NewGui {
 				if(event.getCode() == KeyCode.ENTER) {
 					Integer sampleValue = sampleFormatter.getValue();
 					if(sampleValue != null) {
-						capture.setSample(Integer.parseInt(sampleField.getText()));
+						if(!capture.setSample(Integer.parseInt(sampleField.getText()))) {
+							sampleField.clear();
+							//TODO log
+						}
+						sparsityField.setVisible(true);
 //						System.out.printf("Set sample to %d\n", sampleValue);
 					}
 				}
 			});
 			
 			
-			//Sparcity
-			sparcityField.setOnKeyPressed(event -> {
+			//
+			sparsityField.setOnKeyPressed(event -> {
 				if(event.getCode() == KeyCode.ENTER) {
-					Integer sparcityValue = sparcityFormatter.getValue();
-					if(sparcityValue != null) {
-						capture.setSparcity(Integer.parseInt(sparcityField.getText()));
-//						System.out.printf("Set sparcity to %d\n", sparcityValue);
+					Integer sparsityValue = sparsityFormatter.getValue();
+					if(sparsityValue != null) {
+						if(!capture.setSparsity(Integer.parseInt(sparsityField.getText()))) {
+							sparsityField.clear();
+							//TODO log
+						}
+//						System.out.printf("Set  to %d\n", sparsityValue);
+					}
+					if(!capture.sampleSparsityCheck()) {
+						sampleField.clear();
+						sparsityField.clear();
+						sparsityField.setVisible(false);
+						//TODO log
 					}
 				}
 			});
@@ -147,8 +161,8 @@ public class NewGui {
 		leftPane.add(monitorButton, 0, 0, 2, 1);
 		leftPane.add(sampleText, 0, 1);
 		leftPane.add(sampleField, 1, 1);
-		leftPane.add(sparcityText, 0, 2);
-		leftPane.add(sparcityField, 1, 2);
+		leftPane.add(sparsityText, 0, 2);
+		leftPane.add(sparsityField, 1, 2);
 	}
 	
 	private void initRight() {
