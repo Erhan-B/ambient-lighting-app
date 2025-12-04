@@ -16,12 +16,16 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.util.converter.IntegerStringConverter;
 import monitor.capture.CaptureScreen;
 
 
-public class NewGui {
+public class GUI {	
+	private CaptureScreen capture;
+	
+	//GUI components
 	private BorderPane root;
 	private MenuBar menuBar;
 	private GridPane leftPane;
@@ -29,16 +33,18 @@ public class NewGui {
 	private GridPane statusPane;
 	private Pane ledPane;
 	
-	private CaptureScreen capture;
-	
-	//Gui components
 	private MenuButton monitorButton;
 	private TextField sampleField;
 	private TextField sparsityField;
+	private Text sampleText;
+	private Text sparsityText;
 	private TextFormatter<Integer> sampleFormatter;
 	private TextFormatter<Integer> sparsityFormatter;
 	
-	public NewGui() {
+	/**
+	 * Default constructor for GUI
+	 */
+	public GUI() {
 		root = new BorderPane();
 		menuBar = new MenuBar();
 		leftPane = new GridPane();
@@ -48,17 +54,20 @@ public class NewGui {
 		
 		initLayout();
 		styleLayout();
+		//Delay update to ensure no null values
 		Platform.runLater(() -> {
 			updateLayout();
 		});
 	}
 	
+	/**
+	 * Initialises the various GUI components
+	 */
 	private void initLayout() {
 		initMenu();
 		initLeft();
 		initRight();
 		initStatus();
-		
 		
 		root.setTop(menuBar);
 		root.setLeft(leftPane);
@@ -69,6 +78,9 @@ public class NewGui {
 		initCapture();
 	}
 	
+	/**
+	 * Sets GUI style and preferences 
+	 */
 	private void styleLayout() {
 		root.setStyle("-fx-background-color: #474848");
 		menuBar.setStyle("-fx-background-color: #8e9091;");
@@ -89,6 +101,9 @@ public class NewGui {
 		statusPane.setMaxHeight(50);
 	}
 	
+	/**
+	 * Updates visual information
+	 */
 	private void updateLayout() {
 		updateLeft();
 		updateRight();
@@ -112,12 +127,16 @@ public class NewGui {
 		
 		sampleField = new TextField();
 		sparsityField = new TextField();
-		Text sampleText = new Text("Sample size");
-		Text sparsityText = new Text("Sample sparsity");
+		sampleText = new Text("Sample size");
+		sparsityText = new Text("Sample sparsity");
 		
 		sampleField.setTextFormatter(sampleFormatter);
 		sparsityField.setTextFormatter(sparsityFormatter);
+		
+		sampleField.setVisible(false);
+		sampleText.setVisible(false);
 		sparsityField.setVisible(false);
+		sparsityText.setVisible(false);
 
 		leftPane.add(monitorButton, 0, 0, 2, 1);
 		leftPane.add(sampleText, 0, 1);
@@ -158,8 +177,10 @@ public class NewGui {
 				@Override public void handle(ActionEvent e) {
 					capture.setScreen(d);
 					monitorButton.setText(screenText);
-					initLedPane();
 					capture.initRead();
+					updateLedPane();
+					sampleField.setVisible(true);
+					sampleText.setVisible(true);
 				}
 			});
 		}
@@ -169,23 +190,25 @@ public class NewGui {
 			if(event.getCode() == KeyCode.ENTER) {
 				Integer sampleValue = sampleFormatter.getValue();
 				if(sampleValue != null) {
-					if(!capture.setSample(Integer.parseInt(sampleField.getText()))) {
+					capture.setSample(Integer.parseInt(sampleField.getText()));
+					if(!capture.sampleSparsityCheck()) {
 						sampleField.clear();
 						//TODO log
 					}
 					sparsityField.setVisible(true);
+					sparsityText.setVisible(true);
 					System.out.printf("Set sample to %d\n", sampleValue);
 				}
 			}
 		});
-		
-		
+
 		//Sparsity size
 		sparsityField.setOnKeyPressed(event -> {
 			if(event.getCode() == KeyCode.ENTER) {
 				Integer sparsityValue = sparsityFormatter.getValue();
 				if(sparsityValue != null) {
-					if(!capture.setSparsity(Integer.parseInt(sparsityField.getText()))) {
+					capture.setSparsity(Integer.parseInt(sparsityField.getText()));
+					if(!capture.sampleSparsityCheck()) {
 						sparsityField.clear();
 						//TODO log
 					}
@@ -208,9 +231,25 @@ public class NewGui {
 	}
 	
 	private void updateLedPane() {
-		System.out.printf("ledPane: %d capture: %d\n", (int) ledPane.getWidth(), (int) capture.getScreenConfig().screenWidth());
-		double xRatio = ledPane.getWidth() / capture.getScreenConfig().screenWidth();
-		System.out.println(xRatio);
+		if(capture == null || capture.getScreenConfig() == null) {
+			return;
+		}
+		if(ledPane.getChildren() != null) {
+			ledPane.getChildren().clear();
+		}
+		int extraPadding = 40;
+		double xRatio = (ledPane.getWidth() - extraPadding) / capture.getScreenConfig().screenWidth();
+		double yRatio = (ledPane.getHeight() - extraPadding)/ capture.getScreenConfig().screenHeight();
+		
+		double ratio = Math.min(xRatio, yRatio);
+		
+		Rectangle monitorRep = new Rectangle(capture.getScreenConfig().screenWidth() * ratio, capture.getScreenConfig().screenHeight()*ratio);
+		
+		int xPadding = (int) ((ledPane.getWidth() - extraPadding) - capture.getScreenConfig().screenWidth()*ratio)/2;
+		int yPadding = (int) ((ledPane.getHeight() - extraPadding) - capture.getScreenConfig().screenHeight()*ratio)/2;
+		
+		ledPane.getChildren().add(monitorRep);
+		monitorRep.relocate(xPadding + extraPadding/2, yPadding + extraPadding/2);
 	}
 	
 	private void updateStatus() {

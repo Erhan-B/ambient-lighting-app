@@ -33,6 +33,9 @@ public class CaptureScreen {
 			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 			screenList = ge.getScreenDevices();
 			
+			sampleSize = -1;
+			sparsitySize = -1;
+			
 //			for(int i = 0; i < screens.length; i++) {
 //			System.out.printf("Screen %d: display width: %d, display height: %d%n", i, screens[i].getDisplayMode().getWidth(), screens[i].getDisplayMode().getHeight());
 //			}
@@ -48,7 +51,7 @@ public class CaptureScreen {
 	public void initRead() {
 		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
 		//TODO the mess under this
-		screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5);
+		screen = new ScreenConfig(bounds.width, bounds.height, 98, 5);
 		System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
 		try {
 			r = new Robot(selectedScreen);
@@ -191,30 +194,32 @@ public class CaptureScreen {
 		this.selectedScreen = selectedScreen;
 	}
 	
-	public boolean setSample(int sampleSize) {
+	public void setSample(int sampleSize) {
 		if(sampleSize <= 0) {
 			System.err.println("Sample size cannot be <= 0");
-			return false;
+			return;
 		}
 		this.sampleSize = sampleSize;
-		return true;
+
 	}
 	
-	public boolean setSparsity(int sparsitySize) {
+	public void setSparsity(int sparsitySize) {
 		if(sparsitySize <= 0) {
 			System.err.println("Sparsity cannot be <=0");
-			return false;
+			return;
 		}
 		this.sparsitySize = sparsitySize;
-		return true;
 	}
 	
 	public boolean sampleSparsityCheck() {
-		if(sparsitySize >= sampleSize) {
-			System.err.println("Sparsity greater than sample size");
-			return false;
+		if(sparsitySize >= -1 && sampleSize >= -1) {
+			if(sparsitySize >= sampleSize) {
+				System.err.println("Sparsity greater than sample size");
+				return false;
+			}
+			return true;
 		}
-		return true;
+		return false;
 	}
 	
 	public ScreenConfig getScreenConfig() {

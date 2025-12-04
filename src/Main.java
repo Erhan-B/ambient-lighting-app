@@ -1,4 +1,4 @@
-import gui.NewGui;
+import gui.GUI;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -13,7 +13,7 @@ public class Main extends Application{
 	public void start(Stage stage) throws Exception {		
 //		GuiComp gui = new GuiComp(33, 16);
 		
-		NewGui gui = new NewGui();
+		GUI gui = new GUI();
 		
 		Scene scene = new Scene(gui.getRoot(), 500, 500);
 //		gui.startCaptureThread();
