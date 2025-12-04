@@ -11,7 +11,6 @@ public record ScreenConfig(
 		int ledsLeft,
 		int ledsRight,
 		int numLeds,
-		int sampleSize,
-		sampleType type
+		int sampleSize
 		) {
 }

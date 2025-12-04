@@ -16,8 +16,6 @@ import javax.imageio.ImageIO;
 
 import monitor.Pixel;
 import monitor.ScreenConfig;
-import monitor.sampleType;
-
 import java.awt.Rectangle;
 
 public class CaptureScreen {
@@ -40,26 +38,28 @@ public class CaptureScreen {
 //			}
 			
 			//Set as primary
-			selectedScreen = screenList[0];
-			Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
-			screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5, sampleType.EDGE_ONLY);
-			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
-			r = new Robot(selectedScreen);
-			scanList = new ArrayList<>();
 			
-			edgeSample(40, 40, 5, 15);
-			
-		} catch (AWTException awtex) {
-			System.err.println("Low level input control not allowed");
-			awtex.printStackTrace();
 		} catch (SecurityException securityex) {
 			System.err.println("Permission not granted");
 			securityex.printStackTrace();
 		}
-		
-		if(r == null) {
-			System.err.println("Robot not initialized successfully");
+	}
+	
+	public void initRead() {
+		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
+		//TODO the mess under this
+		screen = new ScreenConfig(bounds.width, bounds.height, 33, 33, 16, 16, 98, 5);
+		System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
+		try {
+			r = new Robot(selectedScreen);
+		} catch (AWTException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		scanList = new ArrayList<>();
+		
+		//TODO 
+		edgeSample(40, 40, 5, 15);
 	}
 	
 	public void readScreen() {
@@ -215,6 +215,10 @@ public class CaptureScreen {
 			return false;
 		}
 		return true;
+	}
+	
+	public ScreenConfig getScreenConfig() {
+		return screen;
 	}
 	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEBUG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
