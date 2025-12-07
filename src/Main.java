@@ -1,7 +1,9 @@
-import gui.GUI;
+import gui.logic.LogicGUI;
+import gui.visual.VisualGUI;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import monitor.capture.CaptureScreen;
 
 public class Main extends Application{
 	
@@ -12,10 +14,11 @@ public class Main extends Application{
 	@Override
 	public void start(Stage stage) throws Exception {		
 //		GuiComp gui = new GuiComp(33, 16);
+		CaptureScreen capture = new CaptureScreen();
+		VisualGUI view = new VisualGUI(capture);
+		LogicGUI logic = new LogicGUI(view, capture);
 		
-		GUI gui = new GUI();
-		
-		Scene scene = new Scene(gui.getRoot(), 500, 500);
+		Scene scene = new Scene(view.getRoot(), 500, 500);
 //		gui.startCaptureThread();
 		stage.setMaximized(true);
 		stage.setScene(scene);
