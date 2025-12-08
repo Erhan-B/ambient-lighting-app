@@ -11,6 +11,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import monitor.capture.CaptureScreen;
@@ -18,6 +19,9 @@ import monitor.capture.CaptureScreen;
 public class LogicGUI {
 	private VisualGUI view;
 	private CaptureScreen capture;
+	
+	private Rectangle monitorRepresentation;
+	private Rectangle ledRectangle;
 	
 	public LogicGUI(VisualGUI view, CaptureScreen capture) {
 		this.view = view;
@@ -68,6 +72,7 @@ public class LogicGUI {
 						sampleField.clear();
 						//TODO log
 					}
+					logicLed();
 					sparsityField.setVisible(true);
 					sparsityText.setVisible(true);
 					System.out.printf("Set sample to %d\n", sampleValue);
@@ -111,19 +116,52 @@ public class LogicGUI {
 		if(ledPane.getChildren() != null) {
 			ledPane.getChildren().clear();
 		}
+		
+		ledPane.setOnMouseClicked(event -> {
+			System.out.printf("Led pane clicked at(%s,%s)\n", (int) event.getX(), (int) event.getY());
+			if(capture.getScreenConfig().getSampleSize() <= 0) {
+				System.out.println(capture.getScreenConfig().getSampleSize());
+				return;
+			}
+			
+			if(validLedClick(event.getX(), event.getY())) {
+				System.out.println("Click is within monitor representation bounds");
+				ledRectangle = new Rectangle(capture.getScreenConfig().getSampleSize(), capture.getScreenConfig().getSampleSize());
+				ledRectangle.setFill(Color.GREY);
+				ledRectangle.relocate(event.getX() - capture.getScreenConfig().getSampleSize()/2, event.getY() - capture.getScreenConfig().getSampleSize()/2);
+				ledPane.getChildren().add(ledRectangle);
+			}
+		});
+		
 		int extraPadding = 40;
-		double xRatio = (ledPane.getWidth() - extraPadding) / capture.getScreenConfig().screenWidth();
-		double yRatio = (ledPane.getHeight() - extraPadding)/ capture.getScreenConfig().screenHeight();
+		double xRatio = (ledPane.getWidth() - extraPadding) / capture.getScreenConfig().getScreenWidth();
+		double yRatio = (ledPane.getHeight() - extraPadding)/ capture.getScreenConfig().getScreenHeight();
 		
 		double ratio = Math.min(xRatio, yRatio);
 		
-		Rectangle monitorRep = new Rectangle(capture.getScreenConfig().screenWidth() * ratio, capture.getScreenConfig().screenHeight()*ratio);
+		monitorRepresentation = new Rectangle(capture.getScreenConfig().getScreenWidth() * ratio, capture.getScreenConfig().getScreenHeight()*ratio);
 		
-		int xPadding = (int) ((ledPane.getWidth() - extraPadding) - capture.getScreenConfig().screenWidth()*ratio)/2;
-		int yPadding = (int) ((ledPane.getHeight() - extraPadding) - capture.getScreenConfig().screenHeight()*ratio)/2;
+		int monitorPaddingX = (int) (((ledPane.getWidth() - extraPadding) - capture.getScreenConfig().getScreenWidth()*ratio)/2);
+		int monitorPaddingY = (int) (((ledPane.getHeight() - extraPadding) - capture.getScreenConfig().getScreenHeight()*ratio)/2);
 		
-		ledPane.getChildren().add(monitorRep);
-		monitorRep.relocate(xPadding + extraPadding/2, yPadding + extraPadding/2);
+		ledPane.getChildren().add(monitorRepresentation);
+		monitorRepresentation.relocate(monitorPaddingX + extraPadding/2, monitorPaddingY + extraPadding/2);
+	}
+	
+	private boolean validLedClick(double x, double y) {
+		double rectX = monitorRepresentation.getLayoutX();
+		double rectY = monitorRepresentation.getLayoutY();
+		double rectWidth = monitorRepresentation.getWidth();
+		double rectHeight = monitorRepresentation.getHeight();
+		if(x <= rectX + rectWidth && y <= rectY + rectHeight &&
+				x >= rectX && y >= rectY) {
+			return true;
+		}
+		return false;
+	}
+	
+	private void clampLED() {
+		
 	}
 	
 	private void updateStatus() {

@@ -23,8 +23,6 @@ public class CaptureScreen {
 	private GraphicsDevice selectedScreen;
 	private GraphicsDevice[] screenList;
 	private ScreenConfig screen;
-	private int sampleSize;
-	private int sparsitySize;
 	private List<Pixel> scanList;
 	
 	
@@ -32,9 +30,6 @@ public class CaptureScreen {
 		try {
 			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 			screenList = ge.getScreenDevices();
-			
-			sampleSize = -1;
-			sparsitySize = -1;
 			
 //			for(int i = 0; i < screens.length; i++) {
 //			System.out.printf("Screen %d: display width: %d, display height: %d%n", i, screens[i].getDisplayMode().getWidth(), screens[i].getDisplayMode().getHeight());
@@ -51,8 +46,8 @@ public class CaptureScreen {
 	public void initRead() {
 		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
 		//TODO the mess under this
-		screen = new ScreenConfig(bounds.width, bounds.height, 98, 5);
-		System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.screenWidth(), screen.screenHeight());
+		screen = new ScreenConfig(bounds.width, bounds.height);
+		System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
 		try {
 			r = new Robot(selectedScreen);
 		} catch (AWTException e) {
@@ -183,7 +178,7 @@ public class CaptureScreen {
 	}
 	
 	private boolean isInRange(int x, int y) {
-		return (x >=0 && y >=0 && x <=screen.screenWidth() && y <= screen.screenHeight());
+		return (x >=0 && y >=0 && x <=screen.getScreenWidth() && y <= screen.getScreenHeight());
 	}
 	
 	public GraphicsDevice[] getScreens() {
@@ -199,8 +194,7 @@ public class CaptureScreen {
 			System.err.println("Sample size cannot be <= 0");
 			return;
 		}
-		this.sampleSize = sampleSize;
-
+		screen.setSampleSize(sampleSize);
 	}
 	
 	public void setSparsity(int sparsitySize) {
@@ -208,12 +202,12 @@ public class CaptureScreen {
 			System.err.println("Sparsity cannot be <=0");
 			return;
 		}
-		this.sparsitySize = sparsitySize;
+		screen.setSparsitySize(sparsitySize);
 	}
 	
 	public boolean sampleSparsityCheck() {
-		if(sparsitySize >= -1 && sampleSize >= -1) {
-			if(sparsitySize >= sampleSize) {
+		if(screen.getSparsitySize() >= -1 && screen.getSampleSize() >= -1) {
+			if(screen.getSparsitySize() >= screen.getSampleSize()) {
 				System.err.println("Sparsity greater than sample size");
 				return false;
 			}
@@ -238,17 +232,17 @@ public class CaptureScreen {
 		BufferedImage leftStrip = r.createScreenCapture(new Rectangle(bounds.x, bounds.y + capStrip, capStrip, bounds.height - 2*capStrip));
 		BufferedImage rightStrip = r.createScreenCapture(new Rectangle(bounds.x + bounds.width - capStrip, bounds.y + capStrip, capStrip, bounds.height - 2*capStrip));
 		
-		BufferedImage image = new BufferedImage(screen.screenWidth(), screen.screenHeight(),BufferedImage.TYPE_INT_RGB);
+		BufferedImage image = new BufferedImage(screen.getScreenWidth(), screen.getScreenHeight(),BufferedImage.TYPE_INT_RGB);
 		
 		Graphics2D g2d = image.createGraphics();
 		g2d.setColor(Color.BLACK);
 		
-		g2d.fillRect(0, 0, screen.screenWidth(), screen.screenHeight());
+		g2d.fillRect(0, 0, screen.getScreenWidth(), screen.getScreenHeight());
 		
 		g2d.drawImage(topStrip, 0, 0, null);
-		g2d.drawImage(bottomStrip, 0, screen.screenHeight()-capStrip, null);
+		g2d.drawImage(bottomStrip, 0, screen.getScreenHeight()-capStrip, null);
 		g2d.drawImage(leftStrip, 0, capStrip, null);
-		g2d.drawImage(rightStrip, screen.screenWidth()-capStrip,capStrip, null);
+		g2d.drawImage(rightStrip, screen.getScreenWidth()-capStrip,capStrip, null);
 		
 		g2d.dispose();
 		writeImage(image);
