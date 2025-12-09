@@ -21,7 +21,6 @@ public class LogicGUI {
 	private CaptureScreen capture;
 	
 	private Rectangle monitorRepresentation;
-	private Rectangle ledRectangle;
 	
 	public LogicGUI(VisualGUI view, CaptureScreen capture) {
 		this.view = view;
@@ -72,6 +71,7 @@ public class LogicGUI {
 						sampleField.clear();
 						//TODO log
 					}
+					//TODO resize samples instead of clearing
 					logicLed();
 					sparsityField.setVisible(true);
 					sparsityText.setVisible(true);
@@ -117,22 +117,6 @@ public class LogicGUI {
 			ledPane.getChildren().clear();
 		}
 		
-		ledPane.setOnMouseClicked(event -> {
-			System.out.printf("Led pane clicked at(%s,%s)\n", (int) event.getX(), (int) event.getY());
-			if(capture.getScreenConfig().getSampleSize() <= 0) {
-				System.out.println(capture.getScreenConfig().getSampleSize());
-				return;
-			}
-			
-			if(validLedClick(event.getX(), event.getY())) {
-				System.out.println("Click is within monitor representation bounds");
-				ledRectangle = new Rectangle(capture.getScreenConfig().getSampleSize(), capture.getScreenConfig().getSampleSize());
-				ledRectangle.setFill(Color.GREY);
-				ledRectangle.relocate(event.getX() - capture.getScreenConfig().getSampleSize()/2, event.getY() - capture.getScreenConfig().getSampleSize()/2);
-				ledPane.getChildren().add(ledRectangle);
-			}
-		});
-		
 		int extraPadding = 40;
 		double xRatio = (ledPane.getWidth() - extraPadding) / capture.getScreenConfig().getScreenWidth();
 		double yRatio = (ledPane.getHeight() - extraPadding)/ capture.getScreenConfig().getScreenHeight();
@@ -146,6 +130,18 @@ public class LogicGUI {
 		
 		ledPane.getChildren().add(monitorRepresentation);
 		monitorRepresentation.relocate(monitorPaddingX + extraPadding/2, monitorPaddingY + extraPadding/2);
+		
+		ledPane.setOnMouseClicked(event -> {
+			System.out.printf("Led pane clicked at(%s,%s)\n", (int) event.getX(), (int) event.getY());
+			if(capture.getScreenConfig().getSampleSize() <= 0) {
+				System.out.println(capture.getScreenConfig().getSampleSize());
+				return;
+			}
+			
+			if(validLedClick(event.getX(), event.getY())) {
+				ledPane.getChildren().add(clampLED(event.getX(),event.getY()));
+			}
+		});
 	}
 	
 	private boolean validLedClick(double x, double y) {
@@ -160,8 +156,44 @@ public class LogicGUI {
 		return false;
 	}
 	
-	private void clampLED() {
+	private Rectangle clampLED(double x, double y) {
+		Rectangle ledRectangle = new Rectangle(capture.getScreenConfig().getSampleSize(), capture.getScreenConfig().getSampleSize());
+		ledRectangle.setFill(Color.GREY);
 		
+		double minX = monitorRepresentation.getLayoutX();
+		double minY = monitorRepresentation.getLayoutY();
+		double maxX = minX + monitorRepresentation.getWidth();
+		double maxY = minY + monitorRepresentation.getHeight();
+		
+		double ledWidth = capture.getScreenConfig().getSampleSize()/2;
+		
+		double ledMinX = x - ledWidth;
+		double ledMinY = y - ledWidth;
+		double ledMaxX = x + ledWidth;
+		double ledMaxY = y + ledWidth;
+		
+		if(ledMinX < minX) {
+			System.out.println("Click is below X bound");
+			x = minX + ledWidth;
+			System.out.printf("New X coordinate is:%s\n", x);
+		}
+		if(ledMinY < minY) {
+			System.out.println("Click is below Y bound");
+			y = minY + ledWidth;
+			System.out.printf("New Y coordinate is:%s\n", y);
+		}
+		if(ledMaxX > maxX) {
+			System.out.println("Click is above X bound");
+			x = maxX - ledWidth;
+			System.out.printf("New X coordinate is:%s\n", x);
+		}
+		if(ledMaxY > maxY) {
+			System.out.println("Click is above Y bound");
+			y = maxY - ledWidth;
+			System.out.printf("New Y coordinate is:%s\n", y);
+		}
+		ledRectangle.relocate(x - ledWidth, y - ledWidth);
+		return ledRectangle;
 	}
 	
 	private void updateStatus() {
