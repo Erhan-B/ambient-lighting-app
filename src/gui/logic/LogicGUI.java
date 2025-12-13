@@ -5,6 +5,7 @@ import java.awt.GraphicsDevice;
 import gui.visual.VisualGUI;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
@@ -117,6 +118,10 @@ public class LogicGUI {
 			ledPane.getChildren().clear();
 		}
 		
+		if(capture.getScreenConfig().getNumLeds() >= 0) {
+			capture.getScreenConfig().setNumLeds(0);
+		}
+		
 		int extraPadding = 40;
 		double xRatio = (ledPane.getWidth() - extraPadding) / capture.getScreenConfig().getScreenWidth();
 		double yRatio = (ledPane.getHeight() - extraPadding)/ capture.getScreenConfig().getScreenHeight();
@@ -139,7 +144,9 @@ public class LogicGUI {
 			}
 			
 			if(validLedClick(event.getX(), event.getY())) {
-				ledPane.getChildren().add(clampLED(event.getX(),event.getY()));
+				addLED(event.getX(),event.getY(), ledPane);
+				
+				System.out.printf("There are currently %d leds\n", capture.getScreenConfig().getNumLeds());
 			}
 		});
 	}
@@ -156,7 +163,8 @@ public class LogicGUI {
 		return false;
 	}
 	
-	private Rectangle clampLED(double x, double y) {
+	//TODO check if overlapping led
+	private void addLED(double x, double y, Pane ledPane) {
 		Rectangle ledRectangle = new Rectangle(capture.getScreenConfig().getSampleSize(), capture.getScreenConfig().getSampleSize());
 		ledRectangle.setFill(Color.GREY);
 		
@@ -193,7 +201,17 @@ public class LogicGUI {
 			System.out.printf("New Y coordinate is:%s\n", y);
 		}
 		ledRectangle.relocate(x - ledWidth, y - ledWidth);
-		return ledRectangle;
+		int currLedNum = capture.getScreenConfig().getNumLeds();
+		capture.getScreenConfig().setNumLeds(++currLedNum);
+		
+		//Add number label for leds
+		//FIXME labels are offset for some reason
+		Label numLabel = new Label(String.valueOf(capture.getScreenConfig().getNumLeds()));
+		numLabel.relocate(ledRectangle.getLayoutX() + ledWidth, ledRectangle.getLayoutY() + ledWidth);
+		
+		numLabel.setTextFill(Color.WHITE);
+		
+		ledPane.getChildren().addAll(ledRectangle, numLabel);
 	}
 	
 	private void updateStatus() {
