@@ -1,5 +1,6 @@
 package gui.visual;
 
+import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuButton;
@@ -8,12 +9,15 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.util.converter.IntegerStringConverter;
 import monitor.capture.CaptureScreen;
 
 
 public class VisualGUI {	
+	private boolean debugMode;
+	
 	private CaptureScreen capture;
 	
 	//GUI components
@@ -25,6 +29,7 @@ public class VisualGUI {
 	private Pane ledPane;
 	
 	private MenuButton monitorButton;
+	private Button editingButton;
 	private TextField sampleField;
 	private TextField sparsityField;
 	private Text sampleText;
@@ -35,7 +40,8 @@ public class VisualGUI {
 	/**
 	 * Default constructor for GUI
 	 */
-	public VisualGUI(CaptureScreen capture) {
+	public VisualGUI(CaptureScreen capture, boolean debugMode) {
+		this.debugMode = debugMode;
 		this.capture = capture;
 		
 		root = new BorderPane();
@@ -98,6 +104,10 @@ public class VisualGUI {
 	
 	private void initLeft() {
 		monitorButton = new MenuButton("Select monitor");
+		editingButton = new Button("Enable editing");
+		
+		editingButton.setStyle("-fx-background-color: #007bff");
+		editingButton.setTextFill(Color.WHITE);
 		
 		sampleFormatter = new TextFormatter<>(new IntegerStringConverter());
 		sparsityFormatter = new TextFormatter<>(new IntegerStringConverter());
@@ -114,12 +124,14 @@ public class VisualGUI {
 		sampleText.setVisible(false);
 		sparsityField.setVisible(false);
 		sparsityText.setVisible(false);
+		editingButton.setVisible(false);
 
 		leftPane.add(monitorButton, 0, 0, 2, 1);
 		leftPane.add(sampleText, 0, 1);
 		leftPane.add(sampleField, 1, 1);
 		leftPane.add(sparsityText, 0, 2);
 		leftPane.add(sparsityField, 1, 2);
+		leftPane.add(editingButton, 0, 3, 2, 1);
 	}
 	
 	private void initRight() {
@@ -328,6 +340,22 @@ public class VisualGUI {
 	public void setRoot(BorderPane root) {
 		this.root = root;
 	}
+
+	/**
+	 * @return the editingButton
+	 */
+	public Button getEditingButton() {
+		return editingButton;
+	}
+
+	/**
+	 * @param editingButton the editingButton to set
+	 */
+	public void setEditingButton(Button editingButton) {
+		this.editingButton = editingButton;
+	}
+	
+	
 	
 	
 }

@@ -10,32 +10,31 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
 import javax.imageio.ImageIO;
 
-import monitor.Pixel;
+import gui.logic.LogicGUI;
 import monitor.ScreenConfig;
 import java.awt.Rectangle;
 
 public class CaptureScreen {
+	private boolean debugMode;
+	
 	private Robot r;
 	private GraphicsDevice selectedScreen;
 	private GraphicsDevice[] screenList;
 	private ScreenConfig screen;
-	private List<Pixel> scanList;
+	private LogicGUI logic;
+	private Rectangle bounds;
+	private List<int[]> scanZones;
 	
-	
-	public CaptureScreen() {
+	public CaptureScreen(boolean debugMode) {
+		this.debugMode = debugMode;
 		try {
 			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 			screenList = ge.getScreenDevices();
-			
-//			for(int i = 0; i < screens.length; i++) {
-//			System.out.printf("Screen %d: display width: %d, display height: %d%n", i, screens[i].getDisplayMode().getWidth(), screens[i].getDisplayMode().getHeight());
-//			}
-			
-			//Set as primary
+			scanZones = new ArrayList<>();
 			
 		} catch (SecurityException securityex) {
 			System.err.println("Permission not granted");
@@ -44,62 +43,39 @@ public class CaptureScreen {
 	}
 	
 	public void initRead() {
-		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
-		//TODO the mess under this
+		bounds = selectedScreen.getDefaultConfiguration().getBounds();
 		screen = new ScreenConfig(bounds.width, bounds.height);
-		System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
+		if(debugMode) {
+			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
+		}
+
 		try {
 			r = new Robot(selectedScreen);
 		} catch (AWTException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		scanList = new ArrayList<>();
 		
-		//TODO 
-		edgeSample(40, 40, 5, 15);
 	}
 	
-	public void readScreen() {
-		readPixels();
-		
-		//Section for reading pixel at center of screen
-//		Rectangle bounds = gd.getDefaultConfiguration().getBounds();
-//		int relX = bounds.width/2;
-//		int relY = bounds.height/2;
-//		BufferedImage image = r.createScreenCapture(bounds);
-//		//DEBUG ~~~~~~~~~~~~
-//		//writeImage(image);
-//		//System.out.printf("Capturing pixel at (%d,%d)%n", relX, relY);
-//
-//		int rgb = image.getRGB(relX, relY);
-//		int red = (rgb >> 16) & 0xFF;
-//		int green = (rgb >> 8) & 0xFF;
-//		int blue = rgb & 0xFF;
-//		System.out.println("Red: " + red + ", Green " + green + ", Blue: " + blue);
-	}
-	
-	//Samples the areas around the edge of the screen
-	//Splits the edges of the screen into subsample zones
-	//Scatters the sample points to create a dispersed sample of each subsample zone
 	/**
 	 * Samples pixels in a range around the edge of the screen
 	 * @param x The x coordinate of the central pixel of the sample
 	 * @param y The y coordinate of the central pixel of the sample
 	 * @param sparsity The gap between subsequent pixels in the sample
 	 * @param sampleSize The length of one side of the square to be sampled
+	 * 
 	 */
-	private void edgeSample(int x, int y, int sparsity, int sampleSize) {
-//		int gapSizeTop = (screen.screenWidth() - (screen.sampleSize() * screen.ledsTop())) / (screen.ledsTop() + 1);
-//		int gapSizeBottom = (screen.screenWidth() - (screen.sampleSize() * screen.ledsBottom())) / (screen.ledsBottom() + 1);
-//		int gapSizeLeft = (screen.screenHeight() - (screen.sampleSize() * screen.ledsLeft())) / (screen.ledsLeft() + 1);
-//		int gapSizeRight = (screen.screenHeight() - (screen.sampleSize() * screen.ledsRight())) / (screen.ledsRight() + 1);
-//		
-//		//Debug
-//		System.out.println(gapSizeTop);
-//		System.out.println(gapSizeBottom);
-//		System.out.println(gapSizeLeft);
-//		System.out.println(gapSizeRight);
+	/*	Samples the areas around the edge of the screen
+		Splits the edges of the screen into subsample zones
+		Scatters the sample points to create a dispersed sample of each subsample zone
+	*/
+	public void addSample(int x, int y) {
+		int sparsity = screen.getSparsitySize();
+		int sampleSize = screen.getSampleSize();
+		
+		if(sparsity == 0) {
+			return;
+		}
 		
 		if(!isInRange(x, y)) {
 			System.err.println("Cannot sample pixel outside of monitor range");
@@ -111,72 +87,105 @@ public class CaptureScreen {
 		int fy = y + (int)(sampleSize /2);
 		int iy = y - (int)(sampleSize /2);
 		
-//		System.out.printf("fx:%d\nix:%d\nfy:%d\niy:%d\n", fx,ix,fy,iy);
+		int maxX = ((fx-ix)/sparsity) + 1;
+		int maxY = ((fy-iy)/sparsity) + 1;
 		
-//		int totalScan = 0;
+		int[] temp = new int[maxX * maxY];
+		int count = 0;
 		
+		//Cook temporary ArrayList
 		for(int i = ix; i < fx +1; i+= sparsity) {
 			for(int j = iy; j < fy +1; j += sparsity) {
 				
 				if(isInRange(i, j)) {
-					
-					scanList.add(new Pixel(i, j));
-//					System.out.printf("Added entry to scanmap: (%d,%d)\n",i,j);
-//					totalScan++;
+					temp[count++] = xyToIndex(i,j);
+					System.out.printf("Added entry to scanmap: (%d,%d) with index %d\n",i,j,xyToIndex(i,j));
 				}
 				else {
-//					System.out.printf("(%d,%d) is out of range\n",i,j);
+					System.out.printf("(%d,%d) is out of range\n",i,j);
 				}
 			}
 		}
-//		System.out.printf("Total pixels: %d\n", totalScan);
 		
+		int[] pixelList = Arrays.copyOf(temp, count);	
+		scanZones.add(pixelList);
 	}
 	
 	/**
 	 * 
 	 * @return avgColor the average colour of the scanned zone
 	 */
-	public int readPixels() {
-		Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
-		BufferedImage image = r.createScreenCapture(bounds);
-		
-//		BufferedImage debugImage = new BufferedImage(screen.screenWidth(), screen.screenHeight(),BufferedImage.TYPE_INT_RGB);
+	//TODO reusable bounds/image
+	//Rectangle bounds = selectedScreen.getDefaultConfiguration().getBounds();
+	//BufferedImage image = r.createScreenCapture(bounds);
+	public int averageZone(BufferedImage image, int zoneIndex) {
 		long totalR = 0;
 		long totalG = 0;
 		long totalB = 0;
 		
-		for(Pixel p: scanList) {
-			int rgb = image.getRGB(p.x(), p.y());
+		int count = 0;
+		
+		int width = screen.getScreenWidth();
+		
+		for(int scanIndex : scanZones.get(zoneIndex)) {
+			int x = scanIndex % width;
+			int y = (int) (scanIndex/width);
 			
+			int rgb = image.getRGB(x, y);
 			totalR += (rgb >> 16) & 0xFF;
 			totalG += (rgb >> 8) & 0xFF;
 			totalB += rgb & 0xFF;
 			
-//			int red = (rgb >> 16) & 0xFF;
-//			int green = (rgb >> 8) & 0xFF;
-//			int blue = rgb & 0xFF;
-			
-			
-//			System.out.printf("X:%d Y:%d R:%d G:%d B:%d\n\n", p.x(), p.y(), red, green, blue);
-//			debugImage.setRGB(p.x(), p.y(), rgb);
-			
+			count++;
 		}
 		
-		int count = scanList.size();
-		int avgR = (int)(totalR / count);
-		int avgG = (int)(totalG / count);
-		int avgB = (int)(totalB / count);
+		int avgR = (int)(totalR/count);
+		int avgG = (int)(totalG/count);
+		int avgB = (int)(totalB/count);
+		int avgColor = (avgR << 16) | (avgG << 8) | (avgB);
 		
-//		System.out.printf("avgR:%d avgG:%d avgB:%d\n", avgR, avgG, avgB);
-		
-		int avgColor = (avgR << 16) | (avgG << 8) | avgB;
-		
-//		writeImage(debugImage);
+		if(debugMode) {
+			System.out.printf("avgR:%d avgG:%d avgB:%d\n", avgR, avgG, avgB);
+		}
 		
 		return avgColor;
 	}
 	
+	public void CaptureThread() {
+		boolean isRunning = true;
+		
+		if(logic == null) {
+			System.err.println("CaptureScreen:LogicGUI is null");
+		}
+		System.out.println("New capture thread started");
+		
+		Thread t = new Thread(()-> {
+			while(isRunning) {
+				BufferedImage screenCap = r.createScreenCapture(bounds);
+				for(int i = 0; i < scanZones.size(); i++) {
+					logic.updateLed(i, averageZone(screenCap, i));
+				}	
+				try {
+					//16 = 60fps
+					//33 = 30fps
+					Thread.sleep(33);
+				}catch(InterruptedException e) {}
+			}
+		});
+		t.start();
+	}
+	
+	/*
+	 * This function takes in an xy coordinate and maps it to a single index
+	 * The formula for this is f(x,y) = y * width + x
+	 * This formula works as the y*width is encoded in the left most part of the index
+	 * and the x is encoded in the right portion
+	 * This formula follows from the mapping for memory and is suitable as it can be inverted to obtain x and y
+	 */
+	private int xyToIndex(int x, int y) {
+		return (y * screen.getScreenWidth() + x);
+	}
+
 	private boolean isInRange(int x, int y) {
 		return (x >=0 && y >=0 && x <=screen.getScreenWidth() && y <= screen.getScreenHeight());
 	}
@@ -187,6 +196,10 @@ public class CaptureScreen {
 	
 	public void setScreen(GraphicsDevice selectedScreen) {
 		this.selectedScreen = selectedScreen;
+	}
+	
+	public void setLogic(LogicGUI logic) {
+		this.logic = logic;
 	}
 	
 	public void setSample(int sampleSize) {

@@ -12,14 +12,16 @@ public class Main extends Application{
 	}
 	
 	@Override
-	public void start(Stage stage) throws Exception {		
+	public void start(Stage stage) throws Exception {
+		boolean debugMode = true;
 //		GuiComp gui = new GuiComp(33, 16);
-		CaptureScreen capture = new CaptureScreen();
-		VisualGUI view = new VisualGUI(capture);
-		LogicGUI logic = new LogicGUI(view, capture);
+		CaptureScreen capture = new CaptureScreen(debugMode);
+		VisualGUI view = new VisualGUI(capture, debugMode);
+		LogicGUI logic = new LogicGUI(view, capture, false, debugMode);
+		capture.setLogic(logic);
 		
 		Scene scene = new Scene(view.getRoot(), 500, 500);
-//		gui.startCaptureThread();
+		
 		stage.setMaximized(true);
 		stage.setScene(scene);
 		stage.show();

@@ -1,16 +1,29 @@
 package gui.logic;
 
+//TODO save profile
+
+
 import java.awt.GraphicsDevice;
+import java.util.ArrayList;
+import java.util.List;
 
 import gui.visual.VisualGUI;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -18,22 +31,43 @@ import javafx.scene.text.Text;
 import monitor.capture.CaptureScreen;
 
 public class LogicGUI {
+	private boolean debugMode;
+	private boolean editingMode;
+	
 	private VisualGUI view;
 	private CaptureScreen capture;
-	
 	private Rectangle monitorRepresentation;
+	private List<Rectangle> ledList;
 	
-	public LogicGUI(VisualGUI view, CaptureScreen capture) {
+	public LogicGUI(VisualGUI view, CaptureScreen capture, boolean useProfile, boolean debugMode) {
+		this.debugMode = debugMode;
 		this.view = view;
 		this.capture = capture;
+
+		ledList = new ArrayList<>();
 		
+		if(useProfile) {
+			loadProfile();
+		}
+		else {
+			initProfile();
+		}
+	}
+	
+	private void loadProfile() {
+		
+	}
+	
+	private void initProfile() {
 		logicLeft();
 		logicLed();
 	}
+	
 	private void logicLeft() {
 		//Monitor selection
 		int screenCounter = 0;
 		MenuButton monitorButton = view.getMonitorButton();
+		Button editingButton = view.getEditingButton();
 		TextField sampleField = view.getSampleField();
 		TextField sparsityField = view.getSparsityField();
 		
@@ -56,6 +90,7 @@ public class LogicGUI {
 					monitorButton.setText(screenText);
 					capture.initRead();
 					logicLed();
+					logicRight();
 					sampleField.setVisible(true);
 					sampleText.setVisible(true);
 				}
@@ -74,9 +109,12 @@ public class LogicGUI {
 					}
 					//TODO resize samples instead of clearing
 					logicLed();
+					logicRight();
 					sparsityField.setVisible(true);
 					sparsityText.setVisible(true);
-					System.out.printf("Set sample to %d\n", sampleValue);
+					if(debugMode) {
+						System.out.printf("Set sample to %d\n", sampleValue);
+					}
 				}
 			}
 		});
@@ -92,21 +130,42 @@ public class LogicGUI {
 						//TODO log
 					}
 					else {
-						System.out.printf("Set sparsity to %d\n", sparsityValue);
+						if(debugMode) {
+							System.out.printf("Set sparsity to %d\n", sparsityValue);
+						}
+						capture.CaptureThread();
+						editingButton.setVisible(true);
 					}
 				}
 				if(!capture.sampleSparsityCheck()) {
 					sampleField.clear();
 					sparsityField.clear();
 					sparsityField.setVisible(false);
+					
 					//TODO log
+					
 				}
+			}
+		});
+		
+		editingButton.setOnMouseClicked(event -> {
+			editingMode = !editingMode;
+			if(editingMode) {
+				editingButton.setStyle("-fx-background-color: #4444aa");
+				view.getLedPane().setStyle("-fx-background-color: #767879;-fx-border-color: red; -fx-border-width: 10px; -fx-border-style: solid");
+			}
+			else {
+				editingButton.setStyle("-fx-background-color: #007bff");
+				view.getLedPane().setStyle("-fx-background-color: #767879;-fx-border-color: #8e9091; -fx-border-width: 3px;");
 			}
 		});
 	}
 	
-	private void updateRight() {
-		//TODO
+	private void logicRight() {
+		GridPane rightPane = view.getRightPane();
+		Label screenDim = new Label(String.format("Monitor size: %sx%s", capture.getScreenConfig().getScreenWidth(), capture.getScreenConfig().getScreenHeight()));
+		rightPane.add(screenDim, 0, 0);
+		
 	}
 	
 	private void logicLed() {
@@ -137,17 +196,29 @@ public class LogicGUI {
 		monitorRepresentation.relocate(monitorPaddingX + extraPadding/2, monitorPaddingY + extraPadding/2);
 		
 		ledPane.setOnMouseClicked(event -> {
-			System.out.printf("Led pane clicked at(%s,%s)\n", (int) event.getX(), (int) event.getY());
-			if(capture.getScreenConfig().getSampleSize() <= 0) {
-				System.out.println(capture.getScreenConfig().getSampleSize());
+			//Nothing to do here
+			if(!editingMode) {
 				return;
 			}
+			double clickX = event.getX();
+			double clickY = event.getY();
 			
-			if(validLedClick(event.getX(), event.getY())) {
-				addLED(event.getX(),event.getY(), ledPane);
-				
-				System.out.printf("There are currently %d leds\n", capture.getScreenConfig().getNumLeds());
+			double monitorX = monitorRepresentation.getLayoutX();
+			double monitorY = monitorRepresentation.getLayoutY();
+			
+			int fullScreenX = (int) ((clickX - monitorX) / ratio);
+			int fullScreenY = (int) ((clickY - monitorY) / ratio);
+			
+			fullScreenX = Math.max(0, Math.min(fullScreenX, capture.getScreenConfig().getScreenWidth() - 1));
+			fullScreenY = Math.max(0, Math.min(fullScreenY, capture.getScreenConfig().getScreenHeight() - 1));
+			if(validLedClick(clickX, clickY)) {
+				capture.addSample(fullScreenX, fullScreenY);
+				addLEDVisual(fullScreenX, fullScreenY, ledPane, ratio, monitorX, monitorY);
 			}
+			
+			if(debugMode) {
+				System.out.printf("Led pane clicked at(%s,%s)\n", (int) event.getX(), (int) event.getY());
+			}			
 		});
 	}
 	
@@ -163,58 +234,56 @@ public class LogicGUI {
 		return false;
 	}
 	
-	//TODO check if overlapping led
-	private void addLED(double x, double y, Pane ledPane) {
-		Rectangle ledRectangle = new Rectangle(capture.getScreenConfig().getSampleSize(), capture.getScreenConfig().getSampleSize());
-		ledRectangle.setFill(Color.GREY);
-		
-		double minX = monitorRepresentation.getLayoutX();
-		double minY = monitorRepresentation.getLayoutY();
-		double maxX = minX + monitorRepresentation.getWidth();
-		double maxY = minY + monitorRepresentation.getHeight();
-		
-		double ledWidth = capture.getScreenConfig().getSampleSize()/2;
-		
-		double ledMinX = x - ledWidth;
-		double ledMinY = y - ledWidth;
-		double ledMaxX = x + ledWidth;
-		double ledMaxY = y + ledWidth;
-		
-		if(ledMinX < minX) {
-			System.out.println("Click is below X bound");
-			x = minX + ledWidth;
-			System.out.printf("New X coordinate is:%s\n", x);
-		}
-		if(ledMinY < minY) {
-			System.out.println("Click is below Y bound");
-			y = minY + ledWidth;
-			System.out.printf("New Y coordinate is:%s\n", y);
-		}
-		if(ledMaxX > maxX) {
-			System.out.println("Click is above X bound");
-			x = maxX - ledWidth;
-			System.out.printf("New X coordinate is:%s\n", x);
-		}
-		if(ledMaxY > maxY) {
-			System.out.println("Click is above Y bound");
-			y = maxY - ledWidth;
-			System.out.printf("New Y coordinate is:%s\n", y);
-		}
-		ledRectangle.relocate(x - ledWidth, y - ledWidth);
-		int currLedNum = capture.getScreenConfig().getNumLeds();
-		capture.getScreenConfig().setNumLeds(++currLedNum);
-		
-		//Add number label for leds
-		//FIXME labels are offset for some reason
-		Label numLabel = new Label(String.valueOf(capture.getScreenConfig().getNumLeds()));
-		numLabel.relocate(ledRectangle.getLayoutX() + ledWidth, ledRectangle.getLayoutY() + ledWidth);
-		
-		numLabel.setTextFill(Color.WHITE);
-		
-		ledPane.getChildren().addAll(ledRectangle, numLabel);
+	private void addLEDVisual(int fullScreenX, int fullScreenY, Pane ledPane, double ratio, double monitorX, double monitorY) {
+	    int currLedNum = capture.getScreenConfig().getNumLeds();
+	    capture.getScreenConfig().setNumLeds(++currLedNum);
+
+	    double ledSize = capture.getScreenConfig().getSampleSize();
+	    Rectangle ledRectangle = new Rectangle(ledSize, ledSize);
+	    ledRectangle.setFill(Color.GREY);
+
+	    double paneX = fullScreenX*ratio + monitorX - ledSize/2;
+	    double paneY = fullScreenY*ratio + monitorY - ledSize/2;
+
+	    //Clamp led
+	    double minX = monitorX;
+	    double minY = monitorY;
+	    double maxX = monitorX + monitorRepresentation.getWidth() - ledSize;
+	    double maxY = monitorY + monitorRepresentation.getHeight() - ledSize;
+
+	    paneX = Math.max(minX, Math.min(paneX, maxX));
+	    paneY = Math.max(minY, Math.min(paneY, maxY));
+
+	    ledRectangle.relocate(paneX, paneY);
+
+	    //Add label
+	    Label numLabel = new Label(String.valueOf(currLedNum));
+	    numLabel.relocate(paneX + ledSize / 2, paneY + ledSize / 2);
+	    numLabel.setTextFill(Color.WHITE);
+	    Platform.runLater(()-> {
+	    	ledPane.getChildren().addAll(ledRectangle, numLabel);
+		    ledList.add(ledRectangle);
+	    });
+	    
 	}
 	
-	private void updateStatus() {
+	public void updateLed(int index, int color) {
+		double red = ((color >> 16) & 0xFF) / 255.0;
+		double green = ((color >> 8) & 0xFF) / 255.0;
+		double blue = (color & 0xFF) / 255.0;
+		if(debugMode) {
+			System.out.printf("index:%d R:%d G:%d B:%d\n", index, red, green, blue);			
+		}
+
+		Color rgb = new Color(red, green, blue, 1.0);
+		Platform.runLater(() -> {
+			ledList.get(index).setFill(rgb);
+		});
+	}
+	
+	private void logicStatus() {
+		GridPane statusPane = view.getStatusPane();
+		
 		//TODO
 	}
 }
