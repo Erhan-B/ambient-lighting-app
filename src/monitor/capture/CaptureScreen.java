@@ -144,9 +144,9 @@ public class CaptureScreen {
 		int avgB = (int)(totalB/count);
 		int avgColor = (avgR << 16) | (avgG << 8) | (avgB);
 		
-		if(debugMode) {
-			System.out.printf("avgR:%d avgG:%d avgB:%d\n", avgR, avgG, avgB);
-		}
+//		if(debugMode) {
+//			System.out.printf("avgR:%d avgG:%d avgB:%d\n", avgR, avgG, avgB);
+//		}
 		
 		return avgColor;
 	}

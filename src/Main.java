@@ -1,8 +1,11 @@
 import gui.logic.LogicGUI;
 import gui.visual.VisualGUI;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import monitor.capture.CaptureScreen;
 
 public class Main extends Application{
@@ -25,6 +28,15 @@ public class Main extends Application{
 		stage.setMaximized(true);
 		stage.setScene(scene);
 		stage.show();
+		
+		//Stop any threads running and exit entire program
+		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+			@Override
+			public void handle(WindowEvent e) {
+				Platform.exit();
+				System.exit(0);
+			}
+		});
 	}
 	
 }

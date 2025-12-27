@@ -26,6 +26,7 @@ import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import monitor.capture.CaptureScreen;
@@ -39,12 +40,18 @@ public class LogicGUI {
 	private Rectangle monitorRepresentation;
 	private List<Rectangle> ledList;
 	
+	private int lastLedX;
+	private int lastLedY;
+	
 	public LogicGUI(VisualGUI view, CaptureScreen capture, boolean useProfile, boolean debugMode) {
 		this.debugMode = debugMode;
 		this.view = view;
 		this.capture = capture;
 
 		ledList = new ArrayList<>();
+		
+		lastLedX = -1;
+		lastLedY = -1;
 		
 		if(useProfile) {
 			loadProfile();
@@ -192,7 +199,7 @@ public class LogicGUI {
 		int monitorPaddingX = (int) (((ledPane.getWidth() - extraPadding) - capture.getScreenConfig().getScreenWidth()*ratio)/2);
 		int monitorPaddingY = (int) (((ledPane.getHeight() - extraPadding) - capture.getScreenConfig().getScreenHeight()*ratio)/2);
 		
-		ledPane.getChildren().add(monitorRepresentation);
+		ledPane.getChildren().add(0,monitorRepresentation);
 		monitorRepresentation.relocate(monitorPaddingX + extraPadding/2, monitorPaddingY + extraPadding/2);
 		
 		ledPane.setOnMouseClicked(event -> {
@@ -255,6 +262,7 @@ public class LogicGUI {
 	    paneY = Math.max(minY, Math.min(paneY, maxY));
 
 	    ledRectangle.relocate(paneX, paneY);
+	    addArrowVisual((int) paneX, (int) paneY, ledPane);
 
 	    //Add label
 	    Label numLabel = new Label(String.valueOf(currLedNum));
@@ -267,13 +275,37 @@ public class LogicGUI {
 	    
 	}
 	
+	private void addArrowVisual(int newX, int newY, Pane ledPane) {
+		if(lastLedX < 0 || lastLedY < 0) {
+			lastLedX = newX;
+			lastLedY = newY;
+			if(debugMode) {
+				System.out.printf("Updated lastLedX to %s and lastLedY to %s\n", newX, newY);
+			}
+			return;
+		}
+		Line line = new Line();
+		line.setStartX(lastLedX);
+		line.setEndX(newX);
+		line.setStartY(lastLedY);
+		line.setEndY(newY);
+		line.setStroke(Color.CORAL);
+		line.setStrokeWidth(4);
+		if(debugMode) {
+			System.out.printf("Added new line from (%s,%s) to (%s,%s)\n", lastLedX, lastLedY, newX, newY);
+		}
+		lastLedX = newX;
+		lastLedY = newY;
+		ledPane.getChildren().add(1,line);
+	}
+	
 	public void updateLed(int index, int color) {
 		double red = ((color >> 16) & 0xFF) / 255.0;
 		double green = ((color >> 8) & 0xFF) / 255.0;
 		double blue = (color & 0xFF) / 255.0;
-		if(debugMode) {
-			System.out.printf("index:%d R:%d G:%d B:%d\n", index, red, green, blue);			
-		}
+//		if(debugMode) {
+//			System.out.printf("index:%s R:%s G:%s B:%s\n", index, red, green, blue);
+//		}
 
 		Color rgb = new Color(red, green, blue, 1.0);
 		Platform.runLater(() -> {
