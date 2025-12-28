@@ -37,7 +37,7 @@ public class CaptureScreen {
 			scanZones = new ArrayList<>();
 			
 		} catch (SecurityException securityex) {
-			System.err.println("Permission not granted");
+			System.err.println("CaptureScreen:Permission not granted");
 			securityex.printStackTrace();
 		}
 	}
@@ -46,7 +46,7 @@ public class CaptureScreen {
 		bounds = selectedScreen.getDefaultConfiguration().getBounds();
 		screen = new ScreenConfig(bounds.width, bounds.height);
 		if(debugMode) {
-			System.out.printf("Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
+			System.out.printf("CaptureScreen:Selected monitor %s with width: %d, height: %d%n", 0, screen.getScreenWidth(), screen.getScreenHeight());
 		}
 
 		try {
@@ -78,7 +78,7 @@ public class CaptureScreen {
 		}
 		
 		if(!isInRange(x, y)) {
-			System.err.println("Cannot sample pixel outside of monitor range");
+			System.err.println("CaptureScreen:Cannot sample pixel outside of monitor range");
 			return;
 		}
 		
@@ -99,10 +99,10 @@ public class CaptureScreen {
 				
 				if(isInRange(i, j)) {
 					temp[count++] = xyToIndex(i,j);
-					System.out.printf("Added entry to scanmap: (%d,%d) with index %d\n",i,j,xyToIndex(i,j));
+					System.out.printf("CaptureScreen:Added entry to scanmap: (%d,%d) with index %d\n",i,j,xyToIndex(i,j));
 				}
 				else {
-					System.out.printf("(%d,%d) is out of range\n",i,j);
+					System.out.printf("CaptureScreen:(%d,%d) is out of range\n",i,j);
 				}
 			}
 		}
@@ -157,13 +157,13 @@ public class CaptureScreen {
 		if(logic == null) {
 			System.err.println("CaptureScreen:LogicGUI is null");
 		}
-		System.out.println("New capture thread started");
+		System.out.println("CaptureScreen:New capture thread started");
 		
 		Thread t = new Thread(()-> {
 			while(isRunning) {
-				BufferedImage screenCap = r.createScreenCapture(bounds);
+				BufferedImage screenCapture = r.createScreenCapture(bounds);
 				for(int i = 0; i < scanZones.size(); i++) {
-					logic.updateLed(i, averageZone(screenCap, i));
+					logic.updateLed(i, averageZone(screenCapture, i));
 				}	
 				try {
 					//16 = 60fps
@@ -204,7 +204,7 @@ public class CaptureScreen {
 	
 	public void setSample(int sampleSize) {
 		if(sampleSize <= 0) {
-			System.err.println("Sample size cannot be <= 0");
+			System.err.println("CaptureScreen:Sample size cannot be <= 0");
 			return;
 		}
 		screen.setSampleSize(sampleSize);
@@ -212,7 +212,7 @@ public class CaptureScreen {
 	
 	public void setSparsity(int sparsitySize) {
 		if(sparsitySize <= 0) {
-			System.err.println("Sparsity cannot be <=0");
+			System.err.println("CaptureScreen:Sparsity cannot be <=0");
 			return;
 		}
 		screen.setSparsitySize(sparsitySize);
@@ -221,7 +221,7 @@ public class CaptureScreen {
 	public boolean sampleSparsityCheck() {
 		if(screen.getSparsitySize() >= -1 && screen.getSampleSize() >= -1) {
 			if(screen.getSparsitySize() >= screen.getSampleSize()) {
-				System.err.println("Sparsity greater than sample size");
+				System.err.println("CaptureScreen:Sparsity greater than sample size");
 				return false;
 			}
 			return true;
